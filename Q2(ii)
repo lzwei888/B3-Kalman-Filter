@@ -1,0 +1,69 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# System matrices
+A = np.array([[0.9, 0.1],
+              [-0.1, 0.8]])
+B = np.array([[0.8],
+              [0.5]])
+C = np.array([[0.8, 0]])
+
+# Noise covariances
+Q = np.array([[0.1, 0],
+              [0, 0.2]])
+R = np.array([[0.1]])
+
+# Stabilizing gain
+K = np.array([[0.5, 0.3]])
+
+# Initial state and estimate covariance
+x0 = np.array([[0, 0]]).T
+P0 = np.eye(2)
+
+# Simulation parameters
+t_sim = 100
+
+# Initialize variables
+x_true = np.zeros((2, t_sim))
+x_est = np.zeros((2, t_sim))
+y = np.zeros((1, t_sim))
+u = np.zeros((1, t_sim))
+
+# Simulate the closed-loop system
+x_true[:, 0] = x0.flatten()
+x_est[:, 0] = x0.flatten()
+
+for t in range(t_sim - 1):
+    # True system dynamics
+    w = np.random.multivariate_normal([0, 0], Q).reshape(2, 1)
+    v = np.random.multivariate_normal([0], R).reshape(1, 1)
+    x_true[:, t+1] = A @ x_true[:, t] + B @ u[:, t] + w.flatten()
+    y[:, t] = C @ x_true[:, t] + v.flatten()
+
+    # Kalman filter equations
+    x_pred = A @ x_est[:, t] + B @ u[:, t]
+    P_pred = A @ P0 @ A.T + Q
+    K_gain = P_pred @ C.T @ np.linalg.inv(C @ P_pred @ C.T + R)
+    x_est[:, t+1] = x_pred + K_gain @ (y[:, t] - C @ x_pred)
+    P0 = (np.eye(2) - K_gain @ C) @ P_pred
+
+    # Control signal
+    u[:, t+1] = K @ x_est[:, t+1]
+
+# Plotting results
+time = np.arange(t_sim)
+plt.figure(figsize=(10, 6))
+plt.plot(time, x_true[0, :], label='True state 1')
+plt.plot(time, x_true[1, :], label='True state 2')
+plt.plot(time, x_est[0, :], label='Estimated state 1')
+plt.plot(time, x_est[1, :], label='Estimated state 2')
+plt.xlabel('Time')
+plt.ylabel('State')
+plt.title('True and Estimated States')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Check convergence
+is_converged = np.allclose(x_est[:, -1], x_true[:, -1], atol=1e-3)
+print("State estimation convergence:", is_converged)
