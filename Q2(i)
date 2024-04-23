@@ -1,0 +1,79 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Define system matrices
+A = np.array([[1, -0.8], [0.3,1]])
+B = np.array([[0.5], [0.5]])
+C = np.array([[1, 0]])
+
+# Define noise covariances
+Q = np.array([[0.2, 0.0], [0.0, 0.3]])  # Process noise covariance
+R = np.array([[0.5]])  # Measurement noise covariance
+
+# Stabilizing gain K
+K = np.array([[0.3, 0.1]])
+
+# Simulation parameters
+t_sim = 100
+x_true = np.array([[0], [0]])  # Initial true state
+x_est = np.array([[0], [0]])  # Initial state estimate
+Sigma_est = np.eye(2)  # Initial covariance
+
+# Storage for plotting
+ys = []
+us = []
+xs_est = []
+
+
+# Noise introduction functions
+def process_noise():
+    return np.random.multivariate_normal([0, 0], Q)
+
+
+def measurement_noise():
+    return np.random.normal(0, R)
+
+
+# Kalman filter and system simulation
+for _ in range(t_sim):
+    # System dynamics
+    u = K @ x_est  # Control action based on state estimate
+    x_true = A @ x_true + B @ u + process_noise()[:, np.newaxis]
+    y = C @ x_true + measurement_noise()
+
+    # Kalman filter update
+    # Predict
+    x_pred = A @ x_est + B @ u
+    Sigma_pred = A @ Sigma_est @ A.T + Q
+
+    # Update
+    yt_est = C @ x_pred
+    S = C @ Sigma_pred @ C.T + R
+    Kt = Sigma_pred @ C.T @ np.linalg.inv(S)
+    x_est = x_pred + Kt @ (y - yt_est)
+    Sigma_est = (np.eye(2) - Kt @ C) @ Sigma_pred
+
+    # Log data for plotting
+    ys.append(y[0])
+    us.append(u[0][0])
+    xs_est.append(x_est[0][0])
+
+# Plotting results
+plt.figure(figsize=(12, 8))
+plt.subplot(311)
+plt.plot(ys, label='Output y(t)')
+plt.title('System Output')
+plt.legend()
+
+plt.subplot(312)
+plt.plot(xs_est, label='State Estimate x1(t|t)')
+plt.title('State Estimates')
+plt.legend()
+
+plt.subplot(313)
+plt.plot(us, label='Control Action u(t)')
+plt.title('Control Actions')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
