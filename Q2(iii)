@@ -1,0 +1,29 @@
+import numpy as np
+
+# System matrices
+A = np.array([[0.8, 0.2],
+              [-0.1, 0.7]])
+B = np.array([[1],
+              [0.5]])
+C = np.array([[1, 0]])
+
+# Noise covariances
+Q = np.array([[0.1, 0],
+              [0, 0.2]])
+R = np.array([[0.1]])
+
+# Stabilizing gain
+K = np.array([[0.5, 0.3]])
+
+# Correcting the matrix multiplication for K and C
+AKC = A - np.dot(K, C.T)
+
+# Compute the eigenvalues of A-KC to check the stability
+eigenvalues = np.linalg.eigvals(AKC)
+
+# Checking if the magnitudes of all eigenvalues are less than 1
+stability = np.all(np.abs(eigenvalues) < 1)
+
+# Print out the results
+print("Eigenvalues of A-KC:", eigenvalues)
+print("Is the system stable? ", stability)
